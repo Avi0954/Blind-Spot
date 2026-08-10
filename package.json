@@ -1,0 +1,20 @@
+{
+  "name": "blind-spot",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Blind Spot - Multiplayer 3D Cooperative Puzzle Game",
+  "workspaces": [
+    "client",
+    "server",
+    "shared"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev -w @blind-spot/shared\" \"npm run dev -w @blind-spot/server\" \"npm run dev -w @blind-spot/client\"",
+    "build": "npm run build --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "typescript": "^5.2.2"
+  }
+}
