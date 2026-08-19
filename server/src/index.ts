@@ -1,4 +1,4 @@
-import { Server } from "@colyseus/core";
+import { Server, LobbyRoom } from "@colyseus/core";
 import { WebSocketTransport } from "@colyseus/ws-transport";
 import express from "express";
 import http from "http";
@@ -18,7 +18,12 @@ const gameServer = new Server({
   })
 });
 
-gameServer.define("game_room", GameRoom);
+// Register Lobby Room
+gameServer.define("lobby", LobbyRoom);
+
+// Register Game Room and enable listing in the lobby
+gameServer.define("game_room", GameRoom)
+  .enableRealtimeListing();
 
 app.get("/", (_req, res) => {
   res.send("Blind Spot Server");
