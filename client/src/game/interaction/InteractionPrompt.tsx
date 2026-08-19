@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Room } from "colyseus.js";
 import { useGameStore } from "../../store/gameStore";
+import { ROLE_DEFINITIONS, RoleType } from "@blind-spot/shared";
 
 export function InteractionPrompt({ room }: { room: Room }) {
   const activeInteractableId = useGameStore((state) => state.activeInteractableId);
@@ -34,9 +35,25 @@ export function InteractionPrompt({ room }: { room: Room }) {
       text = "[E] Inspect Panel";
     }
 
+    // Check Ability
+    const player = room.state.players.get(room.sessionId);
+    const roleDef = player ? ROLE_DEFINITIONS[player.role as RoleType] : null;
+    
+    let isAuthorized = true;
+    if (interactable.requiredAbility && roleDef) {
+      if (!roleDef.abilities.includes(interactable.requiredAbility as any)) {
+        isAuthorized = false;
+      }
+    }
+
+    if (!isAuthorized) {
+      setPrompt(`[Requires ${interactable.requiredAbility.replace(/_/g, " ")}]`);
+      return;
+    }
+
     setPrompt(text);
 
-  }, [activeInteractableId, room.state.clientRealities]); // depend on clientRealities changing, though we might need deeper listener
+  }, [activeInteractableId, room.state.clientRealities, room.sessionId]); 
 
   // For Colyseus changes during active hover:
   useEffect(() => {
@@ -65,8 +82,8 @@ export function InteractionPrompt({ room }: { room: Room }) {
       top: "50%",
       left: "50%",
       transform: "translate(-50%, 20px)",
-      color: "white",
-      background: "rgba(0,0,0,0.5)",
+      color: prompt.startsWith("[Requires") ? "#ff4444" : "white",
+      background: prompt.startsWith("[Requires") ? "rgba(50,0,0,0.8)" : "rgba(0,0,0,0.5)",
       padding: "4px 8px",
       borderRadius: "4px",
       fontFamily: "var(--font-mono)",

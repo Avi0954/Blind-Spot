@@ -1,5 +1,5 @@
 import { InteractionContext, InteractionResult } from "./InteractionContext";
-import { GameStatus } from "@blind-spot/shared";
+import { GameStatus, ROLE_DEFINITIONS, RoleType } from "@blind-spot/shared";
 
 export class InteractionValidator {
   static validate(context: InteractionContext): InteractionResult {
@@ -34,6 +34,14 @@ export class InteractionValidator {
     
     if (distance > interactable.interactionRange) {
       return InteractionResult.OUT_OF_RANGE;
+    }
+
+    // 5.5 ABILITY CHECK
+    if (interactable.requiredAbility) {
+      const roleDef = ROLE_DEFINITIONS[player.role as RoleType];
+      if (!roleDef || !roleDef.abilities.includes(interactable.requiredAbility as any)) {
+        return InteractionResult.UNAUTHORIZED; // Will need to define this in context if missing, or use a general one. Let's add it or use INVALID_PLAYER/OBJECT_NOT_FOUND. Let's use string "UNAUTHORIZED". 
+      }
     }
 
     // 6. Game state check

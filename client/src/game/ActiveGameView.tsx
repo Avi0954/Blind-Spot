@@ -10,10 +10,15 @@ import { RemotePlayers } from "./multiplayer/RemotePlayers";
 import { InteractionPrompt } from "./interaction/InteractionPrompt";
 import { KeypadUI } from "./interaction/KeypadUI";
 import { ClueUI } from "./interaction/ClueUI";
+import { RoleIntroUI } from "./ui/RoleIntroUI";
+import { RoleType } from "@blind-spot/shared";
+import { useGameStore } from "../store/gameStore";
 
 export function ActiveGameView({ room }: { room: any }) {
   const [gameStatus, setGameStatus] = useState(room.state.gameStatus);
   const [playerCount, setPlayerCount] = useState(room.state.players.size);
+  const localPlayer = useGameStore((state: any) => state.players[room?.sessionId || ""]);
+  const role = localPlayer?.role as RoleType || RoleType.UNASSIGNED;
 
   useEffect(() => {
     room.state.listen("gameStatus", (currentValue: string) => {
@@ -25,8 +30,9 @@ export function ActiveGameView({ room }: { room: any }) {
   
   return (
     <div style={{ width: "100vw", height: "100vh", background: "#000" }}>
-      {/* Basic HUD */}
+      {/* Role HUD */}
       <div style={{ position: "absolute", top: 20, left: 20, zIndex: 10, color: "var(--text-secondary)", fontFamily: "var(--font-mono)", pointerEvents: "none" }}>
+        <p>ROLE: {role}</p>
         <p>MODE: {room.state.gameMode}</p>
         <p style={{ marginTop: 10 }}>[W][A][S][D] Move</p>
         <p>[SHIFT] Sprint</p>
@@ -74,14 +80,7 @@ export function ActiveGameView({ room }: { room: any }) {
       )}
 
       {gameStatus === "STARTING" && (
-        <div style={{
-          position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
-          background: "rgba(0,0,0,0.8)", display: "flex", flexDirection: "column",
-          alignItems: "center", justifyContent: "center", zIndex: 50,
-          color: "white", fontFamily: "var(--font-mono)"
-        }}>
-          <h2 style={{ fontSize: "64px", letterSpacing: "15px" }}>INITIALIZING...</h2>
-        </div>
+        <RoleIntroUI role={role} />
       )}
 
       {gameStatus === "COMPLETED" && (

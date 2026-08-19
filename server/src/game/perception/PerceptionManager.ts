@@ -1,5 +1,5 @@
 import { GameRoom } from "../../rooms/GameRoom";
-import { ClientReality, InteractableState } from "@blind-spot/shared";
+import { ClientReality, InteractableState, ROLE_DEFINITIONS, RoleType } from "@blind-spot/shared";
 
 // A simple rule interface. A rule evaluates whether a player can perceive a specific object.
 export interface PerceptionRule {
@@ -12,6 +12,34 @@ export class PerceptionManager {
 
   constructor(room: GameRoom) {
     this.room = room;
+
+    // Default Rule: If requiredPerception is set, player must have that ability
+    this.addRule({
+      evaluate: (playerId: string, object: InteractableState, room: GameRoom) => {
+        if (object.requiredPerception) {
+          const player = room.state.players.get(playerId);
+          if (!player) return false;
+          
+          const roleDef = ROLE_DEFINITIONS[player.role as RoleType];
+          if (!roleDef) return false;
+
+          // Check if role has the required ability
+          // The requiredPerception field contains the Ability enum string
+          return roleDef.abilities.includes(object.requiredPerception as any);
+        }
+        
+        // If there's no requiredPerception, we don't automatically grant it here.
+        // We let other rules (like default visible) handle it, or return true if we want it to be visible by default.
+        return false;
+      }
+    });
+
+    // Fallback Rule: Objects without requiredPerception are visible to everyone
+    this.addRule({
+      evaluate: (_playerId: string, object: InteractableState, _room: GameRoom) => {
+        return !object.requiredPerception;
+      }
+    });
   }
 
   public addRule(rule: PerceptionRule) {

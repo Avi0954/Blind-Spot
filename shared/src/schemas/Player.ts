@@ -8,4 +8,5 @@ export class Player extends Schema {
   @type(Vector3) rotation: Vector3 = new Vector3();
   @type("boolean") ready: boolean = false;
   @type("boolean") connected: boolean = true;
+  @type("string") role: string = "UNASSIGNED";
 }

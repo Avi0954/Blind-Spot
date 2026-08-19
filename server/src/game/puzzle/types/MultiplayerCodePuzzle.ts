@@ -15,6 +15,13 @@ export class MultiplayerCodePuzzle extends Puzzle {
     if (this.completed) return;
 
     if (event.type === "interaction.keypad_submit") {
+      // Check if this puzzle requires a specific target object
+      if (this.configuration.targetObject && this.configuration.targetObject !== event.objectId) {
+        console.log(`[Puzzle] ${this.id} Keypad submission on wrong object: ${event.objectId}`);
+        // Can optionally set failed, but maybe just ignore
+        return;
+      }
+
       const payload = event.payload; // Should be { code: [number, number, number, number] }
       
       if (!payload || !Array.isArray(payload.code)) return;

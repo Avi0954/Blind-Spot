@@ -8,5 +8,7 @@ export class InteractableState extends Schema {
   @type(Vector3) position: Vector3 = new Vector3();
   @type("number") interactionRange: number = 2.0;
   @type("boolean") enabled: boolean = true;
-  @type("string") metadata: string = "{}"; // JSON string for type-specific properties (e.g. requiredItem, oneTimeUse)
+  @type("string") metadata: string = "{}"; // JSON string for type-specific properties
+  @type("string") requiredAbility: string = "";
+  @type("string") requiredPerception: string = "";
 }

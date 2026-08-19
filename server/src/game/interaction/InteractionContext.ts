@@ -22,4 +22,5 @@ export enum InteractionResult {
   COOLDOWN = "COOLDOWN",
   ALREADY_USED = "ALREADY_USED",
   BUSY = "BUSY",
+  UNAUTHORIZED = "UNAUTHORIZED"
 }

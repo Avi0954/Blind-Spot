@@ -6,6 +6,7 @@ import { InteractionContext, InteractionResult } from "../game/interaction/Inter
 import { PuzzleManager } from "../game/puzzle/PuzzleManager";
 import { PerceptionManager } from "../game/perception/PerceptionManager";
 import { GameStateMachine } from "../game/state/GameStateMachine";
+import { RoleManager } from "../game/roles/RoleManager";
 
 export class GameRoom extends Room<GameState> {
   maxClients = 6;
@@ -121,8 +122,12 @@ export class GameRoom extends Room<GameState> {
     this.onMessage("start_game", () => {
       // Intent to start game
       if (this.stateMachine.getState() === GameStatus.LOBBY) {
-         // Optionally force ready all players if host clicks start
+         // Force ready all players if host clicks start
          this.state.players.forEach(p => p.ready = true);
+         
+         // Assign Roles
+         RoleManager.assignRoles(Array.from(this.state.players.values()));
+
          this.stateMachine.transition(GameStatus.STARTING, "Host requested start");
       }
     });
@@ -153,40 +158,74 @@ export class GameRoom extends Room<GameState> {
     const door = new InteractableState();
     door.id = "door_01";
     door.type = "door";
-    door.state = "locked"; // Starts locked!
+    door.state = "locked"; 
     door.position = new Vector3(0, 0, -5);
     door.interactionRange = 3.0;
-    door.enabled = false; // Cannot be opened until puzzle solves
+    door.enabled = false; 
     this.state.interactables.set(door.id, door);
 
-    // Keypad (Code panel)
-    const keypad = new InteractableState();
-    keypad.id = "keypad_01";
-    keypad.type = "keypad";
-    keypad.state = "idle";
-    keypad.position = new Vector3(-1, 1.5, -4.9); // Near the door
-    keypad.interactionRange = 2.0;
-    this.state.interactables.set(keypad.id, keypad);
+    // Terminal A (Fake)
+    const terminalA = new InteractableState();
+    terminalA.id = "terminal_a";
+    terminalA.type = "keypad";
+    terminalA.state = "idle";
+    terminalA.position = new Vector3(-4.9, 1.5, -3); // Left wall
+    terminalA.interactionRange = 2.0;
+    terminalA.requiredAbility = "OPERATE_MACHINE";
+    this.state.interactables.set(terminalA.id, terminalA);
 
-    // Symbol Clue (Player A)
+    // Terminal B (Correct)
+    const terminalB = new InteractableState();
+    terminalB.id = "terminal_b";
+    terminalB.type = "keypad";
+    terminalB.state = "idle";
+    terminalB.position = new Vector3(0, 1.5, -4.9); // Back wall near door
+    terminalB.interactionRange = 2.0;
+    terminalB.requiredAbility = "OPERATE_MACHINE";
+    this.state.interactables.set(terminalB.id, terminalB);
+
+    // Terminal C (Fake)
+    const terminalC = new InteractableState();
+    terminalC.id = "terminal_c";
+    terminalC.type = "keypad";
+    terminalC.state = "idle";
+    terminalC.position = new Vector3(4.9, 1.5, -3); // Right wall
+    terminalC.interactionRange = 2.0;
+    terminalC.requiredAbility = "OPERATE_MACHINE";
+    this.state.interactables.set(terminalC.id, terminalC);
+
+    // Observer Clue (Hidden Symbol Panel)
     const symbolClue = new InteractableState();
-    symbolClue.id = "symbol_clue_01";
+    symbolClue.id = "symbol_panel_01";
     symbolClue.type = "clue";
     symbolClue.state = "idle";
     symbolClue.position = new Vector3(-4.9, 1.5, 0); // On left wall
     symbolClue.interactionRange = 3.0;
-    symbolClue.metadata = JSON.stringify({ clue: "▲  ○  □  ▲", title: "SYMBOL PANEL" });
+    symbolClue.requiredPerception = "SEE_HIDDEN_CLUE";
+    symbolClue.metadata = JSON.stringify({ clue: "▲  ○  □  ○", title: "HIDDEN SYMBOLS" });
     this.state.interactables.set(symbolClue.id, symbolClue);
 
-    // Number Clue (Player B)
-    const numberClue = new InteractableState();
-    numberClue.id = "number_clue_01";
-    numberClue.type = "clue";
-    numberClue.state = "idle";
-    numberClue.position = new Vector3(4.9, 1.5, 0); // On right wall
-    numberClue.interactionRange = 3.0;
-    numberClue.metadata = JSON.stringify({ clue: "3  1  4  3", title: "CODE PANEL" });
-    this.state.interactables.set(numberClue.id, numberClue);
+    // Decoder Clue (Translation Panel)
+    const decoderClue = new InteractableState();
+    decoderClue.id = "decoder_panel_01";
+    decoderClue.type = "clue";
+    decoderClue.state = "idle";
+    decoderClue.position = new Vector3(4.9, 1.5, 0); // On right wall
+    decoderClue.interactionRange = 3.0;
+    decoderClue.requiredPerception = "DECODE_SYMBOL";
+    decoderClue.metadata = JSON.stringify({ clue: "▲=8  ○=3  □=6", title: "TRANSLATION KEY" });
+    this.state.interactables.set(decoderClue.id, decoderClue);
+
+    // Navigator Clue (Map/Routing Panel)
+    const navigatorClue = new InteractableState();
+    navigatorClue.id = "navigator_map_01";
+    navigatorClue.type = "clue";
+    navigatorClue.state = "idle";
+    navigatorClue.position = new Vector3(0, 1.5, 4.9); // On back wall (spawn area)
+    navigatorClue.interactionRange = 3.0;
+    navigatorClue.requiredPerception = "SEE_HIDDEN_ROUTE";
+    navigatorClue.metadata = JSON.stringify({ clue: "POWER RELAY IS ROUTED TO TERMINAL B ONLY", title: "FACILITY MAP" });
+    this.state.interactables.set(navigatorClue.id, navigatorClue);
 
     // MVP Puzzle 01 Configuration
     this.puzzleManager.loadPuzzles([
@@ -194,10 +233,11 @@ export class GameRoom extends Room<GameState> {
         id: "reality_puzzle_01",
         type: "multiplayer",
         configuration: {
-          playersRequired: 2
+          playersRequired: 2,
+          targetObject: "terminal_b"
         },
         solution: {
-          sequence: [3, 1, 4, 3]
+          sequence: [8, 3, 6, 3]
         }
       }
     ]);
