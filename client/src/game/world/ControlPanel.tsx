@@ -9,7 +9,8 @@ export function ControlPanel({ position, rotation, interactableId, room }: { pos
 
   useFrame((_, delta) => {
     if (!handleRef.current) return;
-    const interactable = room.state.interactables.get(interactableId);
+    const cr = room.state.clientRealities.get(room.sessionId);
+    const interactable = cr?.visibleInteractables.get(interactableId);
     if (!interactable) return;
 
     // Lever is 'off' (up) or 'on' (down)
@@ -17,8 +18,12 @@ export function ControlPanel({ position, rotation, interactableId, room }: { pos
     handleRef.current.rotation.x = THREE.MathUtils.lerp(handleRef.current.rotation.x, targetX, delta * 10);
   });
 
-  const interactable = room.state.interactables.get(interactableId);
-  const statusColor = interactable?.state === "on" ? "#00ff00" : "#ff0000";
+  const clientReality = room.state.clientRealities.get(room.sessionId);
+  const interactable = clientReality?.visibleInteractables.get(interactableId);
+  
+  if (!interactable) return null;
+
+  const statusColor = interactable.state === "on" ? "#00ff00" : "#ff0000";
 
   return (
     <RigidBody type="fixed" colliders="hull" userData={{ interactableId }}>

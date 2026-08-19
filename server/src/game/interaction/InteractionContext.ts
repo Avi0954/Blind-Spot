@@ -7,6 +7,7 @@ export interface InteractionContext {
   room: GameRoom;
   state: GameState;
   timestamp: number;
+  payload?: any;
 }
 
 export enum InteractionResult {

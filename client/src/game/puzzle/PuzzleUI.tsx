@@ -6,17 +6,21 @@ export function PuzzleUI({ room }: { room: Room }) {
   const [puzzles, setPuzzles] = useState<Map<string, PuzzleState>>(new Map());
 
   useEffect(() => {
-    const updatePuzzles = () => setPuzzles(new Map(room.state.puzzles));
-    room.state.puzzles.onAdd = updatePuzzles;
-    room.state.puzzles.onRemove = updatePuzzles;
-    room.state.puzzles.onChange = updatePuzzles;
-    updatePuzzles();
+    // Wait for the clientReality to exist (might not be immediate on load)
+    const checkReality = setInterval(() => {
+      const reality = room.state.clientRealities.get(room.sessionId);
+      if (reality) {
+        clearInterval(checkReality);
+        
+        const updatePuzzles = () => setPuzzles(new Map(reality.visiblePuzzles));
+        reality.visiblePuzzles.onAdd = updatePuzzles;
+        reality.visiblePuzzles.onRemove = updatePuzzles;
+        reality.visiblePuzzles.onChange = updatePuzzles;
+        updatePuzzles();
+      }
+    }, 100);
 
-    return () => {
-      room.state.puzzles.onAdd = undefined;
-      room.state.puzzles.onRemove = undefined;
-      room.state.puzzles.onChange = undefined;
-    };
+    return () => clearInterval(checkReality);
   }, [room]);
 
   return (

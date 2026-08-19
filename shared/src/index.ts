@@ -3,3 +3,4 @@ export * from "./schemas/Player";
 export * from "./schemas/GameState";
 export * from "./schemas/InteractableState";
 export * from "./schemas/PuzzleState";
+export * from "./schemas/ClientReality";

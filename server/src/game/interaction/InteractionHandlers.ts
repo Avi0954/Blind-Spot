@@ -8,6 +8,9 @@ export class InteractionHandlers {
       case "door":
         this.handleDoor(context);
         break;
+      case "keypad":
+        this.handleKeypad(context);
+        break;
       case "lever":
       case "switch":
         this.handleToggle(context);
@@ -45,7 +48,17 @@ export class InteractionHandlers {
       }, 1000);
     }
   }
-
+  private static handleKeypad(context: InteractionContext) {
+    const { interactable, room, payload } = context;
+    
+    // Keypads don't change state directly, they just emit the submitted payload to the puzzle manager
+    room.puzzleManager.handleEvent({
+      type: "interaction.keypad_submit",
+      objectId: interactable.id,
+      playerId: context.player.playerId,
+      payload: payload
+    });
+  }
   private static handleToggle(context: InteractionContext) {
     const { interactable } = context;
     if (interactable.state === "idle" || interactable.state === "off") {

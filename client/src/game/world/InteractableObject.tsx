@@ -3,10 +3,11 @@ import { Room } from "colyseus.js";
 
 export function InteractableObject({ position, color = "#ffaa00", interactableId, room }: { position: [number, number, number], color?: string, interactableId: string, room: Room }) {
   
-  const interactable = room.state.interactables.get(interactableId);
+  const clientReality = room.state.clientRealities.get(room.sessionId);
+  const interactable = clientReality?.visibleInteractables.get(interactableId);
   
-  // If consumed (e.g. key picked up), don't render it at all
-  if (interactable && interactable.state === "consumed") {
+  // If consumed or not visible, don't render it at all
+  if (!interactable || interactable.state === "consumed") {
     return null;
   }
 

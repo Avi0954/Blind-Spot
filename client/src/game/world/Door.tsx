@@ -17,7 +17,8 @@ export function Door({ position, rotation, interactableId, room }: { position: [
 
   useFrame((_, delta) => {
     if (!hingeRef.current) return;
-    const interactable = room.state.interactables.get(interactableId);
+    const cr = room.state.clientRealities.get(room.sessionId);
+    const interactable = cr?.visibleInteractables.get(interactableId);
     if (!interactable) return;
 
     // Determine target rotation based on state
@@ -27,8 +28,12 @@ export function Door({ position, rotation, interactableId, room }: { position: [
     hingeRef.current.rotation.y = THREE.MathUtils.lerp(hingeRef.current.rotation.y, targetY, delta * 5);
   });
 
-  const interactable = room.state.interactables.get(interactableId);
-  const statusColor = interactable?.state === "open" ? "#00cc00" : interactable?.state === "opening" ? "#cccc00" : "#cc0000";
+  const clientReality = room.state.clientRealities.get(room.sessionId);
+  const interactable = clientReality?.visibleInteractables.get(interactableId);
+  
+  if (!interactable) return null;
+
+  const statusColor = interactable.state === "open" ? "#00cc00" : interactable.state === "opening" ? "#cccc00" : "#cc0000";
 
   return (
     <group position={position} rotation={rotation}>

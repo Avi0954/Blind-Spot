@@ -4,15 +4,40 @@ import { InteractionValidator } from "../game/interaction/InteractionValidator";
 import { InteractionHandlers } from "../game/interaction/InteractionHandlers";
 import { InteractionResult } from "../game/interaction/InteractionContext";
 import { PuzzleManager } from "../game/puzzle/PuzzleManager";
+import { PerceptionManager } from "../game/perception/PerceptionManager";
 
 export class GameRoom extends Room<GameState> {
   maxClients = 6;
   puzzleManager!: PuzzleManager;
+  perceptionManager!: PerceptionManager;
 
   onCreate(options: any) {
     this.setState(new GameState());
     
     this.puzzleManager = new PuzzleManager(this);
+    this.perceptionManager = new PerceptionManager(this);
+
+    this.perceptionManager.addRule({
+      evaluate: (playerId: string, object: InteractableState, room: GameRoom) => {
+        // Find player roles
+        const players = Array.from(room.state.players.keys());
+        const isPlayerA = players[0] === playerId;
+        
+        // Door and keypad are visible to everyone
+        if (object.id === "door_01" || object.id === "keypad_01") return true;
+
+        // Player A sees symbol clue
+        if (isPlayerA && object.id === "symbol_clue_01") return true;
+
+        // Player B sees number clue
+        if (!isPlayerA && object.id === "number_clue_01") return true;
+
+        // In single player testing, allow seeing both
+        if (players.length <= 1) return true;
+
+        return false;
+      }
+    });
 
     this.state.roomId = this.roomId;
     this.state.createdAt = Date.now();
@@ -65,18 +90,22 @@ export class GameRoom extends Room<GameState> {
 
       if (!player || !interactable) return;
 
-      const context = { 
+      const context: InteractionContext = { 
         player, 
-        interactable, 
+        interactable,
         room: this,
         state: this.state,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        payload: data.payload
       };
       
       const result = InteractionValidator.validate(context);
       if (result === InteractionResult.SUCCESS) {
         InteractionHandlers.handle(context);
+        // Re-evaluate perception in case the interaction changed world state that affects visibility
+        this.perceptionManager.recalculateAll();
       } else {
+        console.warn(`[Interaction] Validation failed: ${result}`);
         client.send("interaction_error", { objectId: data.objectId, reason: result });
       }
     });
@@ -114,40 +143,51 @@ export class GameRoom extends Room<GameState> {
     const door = new InteractableState();
     door.id = "door_01";
     door.type = "door";
-    door.state = "closed";
+    door.state = "locked"; // Starts locked!
     door.position = new Vector3(0, 0, -5);
     door.interactionRange = 3.0;
+    door.enabled = false; // Cannot be opened until puzzle solves
     this.state.interactables.set(door.id, door);
 
-    // Key
-    const key = new InteractableState();
-    key.id = "key_01";
-    key.type = "key";
-    key.state = "idle";
-    key.position = new Vector3(2, 1.1, 0); // On the table
-    key.interactionRange = 2.0;
-    this.state.interactables.set(key.id, key);
+    // Keypad (Code panel)
+    const keypad = new InteractableState();
+    keypad.id = "keypad_01";
+    keypad.type = "keypad";
+    keypad.state = "idle";
+    keypad.position = new Vector3(-1, 1.5, -4.9); // Near the door
+    keypad.interactionRange = 2.0;
+    this.state.interactables.set(keypad.id, keypad);
 
-    // Lever
-    const lever = new InteractableState();
-    lever.id = "lever_01";
-    lever.type = "lever";
-    lever.state = "off";
-    lever.position = new Vector3(-4.9, 1.5, 2); // Control panel area
-    lever.interactionRange = 2.0;
-    this.state.interactables.set(lever.id, lever);
+    // Symbol Clue (Player A)
+    const symbolClue = new InteractableState();
+    symbolClue.id = "symbol_clue_01";
+    symbolClue.type = "clue";
+    symbolClue.state = "idle";
+    symbolClue.position = new Vector3(-4.9, 1.5, 0); // On left wall
+    symbolClue.interactionRange = 3.0;
+    symbolClue.metadata = JSON.stringify({ clue: "▲  ○  □  ▲", title: "SYMBOL PANEL" });
+    this.state.interactables.set(symbolClue.id, symbolClue);
 
-    // Test Sequence Puzzle Configuration
+    // Number Clue (Player B)
+    const numberClue = new InteractableState();
+    numberClue.id = "number_clue_01";
+    numberClue.type = "clue";
+    numberClue.state = "idle";
+    numberClue.position = new Vector3(4.9, 1.5, 0); // On right wall
+    numberClue.interactionRange = 3.0;
+    numberClue.metadata = JSON.stringify({ clue: "3  1  4  3", title: "CODE PANEL" });
+    this.state.interactables.set(numberClue.id, numberClue);
+
+    // MVP Puzzle 01 Configuration
     this.puzzleManager.loadPuzzles([
       {
-        id: "lab_sequence_01",
-        type: "sequence",
+        id: "reality_puzzle_01",
+        type: "multiplayer",
         configuration: {
-          targets: ["lever_01", "door_01"],
-          resetOnMistake: true
+          playersRequired: 2
         },
         solution: {
-          sequence: ["lever_01", "door_01"]
+          sequence: [3, 1, 4, 3]
         }
       }
     ]);
@@ -170,6 +210,9 @@ export class GameRoom extends Room<GameState> {
 
     this.state.players.set(client.sessionId, player);
 
+    this.perceptionManager.initializePlayer(client.sessionId);
+    this.perceptionManager.recalculateAll(); // recalculate for everyone when someone joins to trigger the test rule split
+
     this.broadcast("player_join", { playerId: player.playerId, name: player.name });
   }
 
@@ -182,6 +225,8 @@ export class GameRoom extends Room<GameState> {
       this.broadcast("player_leave", { playerId: player.playerId, name: player.name });
       
       this.state.players.delete(client.sessionId);
+      this.perceptionManager.removePlayer(client.sessionId);
+      this.perceptionManager.recalculateAll();
       
       // If room is empty, close it
       if (this.state.players.size === 0) {

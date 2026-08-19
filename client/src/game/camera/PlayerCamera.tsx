@@ -58,13 +58,17 @@ export function PlayerCamera({ room }: { room: Room }) {
     const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
     const ray = new rapier.Ray(origin, dir);
     const hit = world.castRay(ray, 3.0, true);
-    
+
     let hitId = null;
+
     if (hit && hit.collider) {
-      const parent = hit.collider.parent();
-      const userData = parent?.userData as { interactableId?: string } | undefined;
-      if (userData?.interactableId) {
-        hitId = userData.interactableId;
+      // We hit something! Check if it's an interactable we can perceive
+      const userData = hit.collider.parent()?.userData as { interactableId?: string } | undefined;
+      if (userData && userData.interactableId) {
+        const clientReality = room.state.clientRealities.get(room.sessionId);
+        if (clientReality && clientReality.visibleInteractables.has(userData.interactableId)) {
+          hitId = userData.interactableId;
+        }
       }
     }
     
