@@ -132,6 +132,14 @@ export function App() {
   };
 
   const setupGameRoom = (room: any) => {
+    room.onMessage("player_join", (data: any) => console.log("Player joined:", data));
+    room.onMessage("player_leave", (data: any) => console.log("Player left:", data));
+    room.onMessage("game_state_changed", (data: any) => console.log("Game state changed:", data));
+    room.onMessage("PANIC_STARTED", (data: any) => console.log("Panic started:", data));
+    room.onMessage("PANIC_VICTORY", (data: any) => console.log("Panic victory:", data));
+    room.onMessage("PANIC_FAILURE", (data: any) => console.log("Panic failure:", data));
+    room.onMessage("PANIC_PHASE_CHANGED", (data: any) => console.log("Panic phase changed:", data));
+
     setGameRoom(room);
     setStatus("in_game");
   };
