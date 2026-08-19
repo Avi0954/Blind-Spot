@@ -1,6 +1,7 @@
 import { GameRoom } from "../../rooms/GameRoom";
 import { Puzzle } from "./Puzzle";
 import { PuzzleRegistry } from "./PuzzleRegistry";
+import { GameStatus } from "@blind-spot/shared";
 
 export class PuzzleManager {
   private room: GameRoom;
@@ -40,7 +41,7 @@ export class PuzzleManager {
             if (door) {
               door.state = "opening"; // Physical door opens
             }
-            this.room.state.gameStatus = "victory"; // Trigger victory UI
+            this.room.stateMachine.transition(GameStatus.COMPLETED, "MVP Puzzle Solved");
           }
         }
         

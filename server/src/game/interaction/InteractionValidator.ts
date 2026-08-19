@@ -1,4 +1,5 @@
 import { InteractionContext, InteractionResult } from "./InteractionContext";
+import { GameStatus } from "@blind-spot/shared";
 
 export class InteractionValidator {
   static validate(context: InteractionContext): InteractionResult {
@@ -36,7 +37,7 @@ export class InteractionValidator {
     }
 
     // 6. Game state check
-    if (state.gameStatus !== "playing" && state.gameStatus !== "waiting") {
+    if (state.gameStatus !== GameStatus.PLAYING && state.gameStatus !== GameStatus.STARTING) {
       return InteractionResult.INVALID_GAME_STATE;
     }
     

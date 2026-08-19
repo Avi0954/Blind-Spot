@@ -1,21 +1,24 @@
 import { Room, Client } from "@colyseus/core";
-import { GameState, Player, InteractableState, Vector3 } from "@blind-spot/shared";
+import { GameState, GameStatus, Player, InteractableState, Vector3 } from "@blind-spot/shared";
 import { InteractionValidator } from "../game/interaction/InteractionValidator";
 import { InteractionHandlers } from "../game/interaction/InteractionHandlers";
-import { InteractionResult } from "../game/interaction/InteractionContext";
+import { InteractionContext, InteractionResult } from "../game/interaction/InteractionContext";
 import { PuzzleManager } from "../game/puzzle/PuzzleManager";
 import { PerceptionManager } from "../game/perception/PerceptionManager";
+import { GameStateMachine } from "../game/state/GameStateMachine";
 
 export class GameRoom extends Room<GameState> {
   maxClients = 6;
   puzzleManager!: PuzzleManager;
   perceptionManager!: PerceptionManager;
+  stateMachine!: GameStateMachine;
 
   onCreate(options: any) {
     this.setState(new GameState());
     
     this.puzzleManager = new PuzzleManager(this);
     this.perceptionManager = new PerceptionManager(this);
+    this.stateMachine = new GameStateMachine(this);
 
     this.perceptionManager.addRule({
       evaluate: (playerId: string, object: InteractableState, room: GameRoom) => {
@@ -47,6 +50,11 @@ export class GameRoom extends Room<GameState> {
       const player = this.state.players.get(client.sessionId);
       if (player) {
         player.ready = !!message.ready;
+        
+        // If we are in LOBBY, check if we can start
+        if (this.stateMachine.getState() === GameStatus.LOBBY) {
+           this.stateMachine.transition(GameStatus.STARTING, "All players ready");
+        }
       }
     });
 
@@ -110,30 +118,32 @@ export class GameRoom extends Room<GameState> {
       }
     });
 
-    this.onMessage("start_game", (client) => {
-      if (client.sessionId !== this.state.hostId) {
-        return client.send("error", { message: "Only the host can start the game." });
-      }
-
-      if (this.state.players.size < 2) {
-        return client.send("error", { message: "Minimum 2 players required to start." });
-      }
-
-      let allReady = true;
-      this.state.players.forEach((player) => {
-        if (!player.ready) allReady = false;
-      });
-
-      if (!allReady) {
-        return client.send("error", { message: "All players must be ready." });
-      }
-
-      if (this.state.gameStatus === "waiting") {
-        this.state.gameStatus = "playing";
-        this.state.startedAt = Date.now();
-        this.broadcast("game_started");
+    this.onMessage("start_game", () => {
+      // Intent to start game
+      if (this.stateMachine.getState() === GameStatus.LOBBY) {
+         // Optionally force ready all players if host clicks start
+         this.state.players.forEach(p => p.ready = true);
+         this.stateMachine.transition(GameStatus.STARTING, "Host requested start");
       }
     });
+
+    this.onMessage("rematch", () => {
+      if (this.stateMachine.getState() === GameStatus.ENDING) {
+        this.stateMachine.transition(GameStatus.LOBBY, "Rematch requested");
+      }
+    });
+  }
+
+  public resetMatchState() {
+    this.state.players.forEach(p => p.ready = false);
+    this.state.interactables.clear();
+    this.state.puzzles.clear();
+    this.state.startedAt = 0;
+  }
+
+  public initializeWorld() {
+    this.seedInteractables();
+    this.perceptionManager.recalculateAll();
   }
 
   private seedInteractables() {
@@ -211,6 +221,12 @@ export class GameRoom extends Room<GameState> {
     this.state.players.set(client.sessionId, player);
 
     this.perceptionManager.initializePlayer(client.sessionId);
+    
+    // Attempt transition to LOBBY if waiting
+    if (this.stateMachine.getState() === GameStatus.WAITING) {
+      this.stateMachine.transition(GameStatus.LOBBY, "Required players joined");
+    }
+
     this.perceptionManager.recalculateAll(); // recalculate for everyone when someone joins to trigger the test rule split
 
     this.broadcast("player_join", { playerId: player.playerId, name: player.name });
@@ -240,10 +256,13 @@ export class GameRoom extends Room<GameState> {
           }
         }
         
-        // Pause game if we drop below minimum players during active play
-        if (this.state.players.size < 2 && this.state.gameStatus === "playing") {
-          this.state.gameStatus = "waiting";
-          this.broadcast("game_paused", { reason: "Not enough players" });
+        // Check if we dropped below minimum players
+        if (this.state.players.size < 2) {
+          if (this.stateMachine.getState() === GameStatus.PLAYING) {
+             this.stateMachine.transition(GameStatus.WAITING, "Not enough players");
+          } else if (this.stateMachine.getState() === GameStatus.LOBBY) {
+             this.stateMachine.transition(GameStatus.WAITING, "Not enough players");
+          }
         }
       }
     }

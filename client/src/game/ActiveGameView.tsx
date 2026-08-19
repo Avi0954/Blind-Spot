@@ -43,7 +43,7 @@ export function ActiveGameView({ room }: { room: any }) {
       }} />
 
       {/* Overlays */}
-      {gameStatus === "waiting" && (
+      {gameStatus === "WAITING" && (
         <div style={{
           position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
           background: "rgba(0,0,0,0.8)", display: "flex", flexDirection: "column",
@@ -55,7 +55,36 @@ export function ActiveGameView({ room }: { room: any }) {
         </div>
       )}
 
-      {gameStatus === "victory" && (
+      {gameStatus === "LOBBY" && (
+        <div style={{
+          position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
+          background: "rgba(0,0,0,0.8)", display: "flex", flexDirection: "column",
+          alignItems: "center", justifyContent: "center", zIndex: 50,
+          color: "white", fontFamily: "var(--font-mono)"
+        }}>
+          <h2>LOBBY READY</h2>
+          <p style={{ marginTop: 20, fontSize: "24px", color: "#888", marginBottom: "40px" }}>{playerCount} / 2 PLAYERS</p>
+          <button 
+            onClick={() => room.send("start_game")}
+            style={{ padding: "15px 30px", fontSize: "20px", background: "white", color: "black", cursor: "pointer", border: "none" }}
+          >
+            START GAME
+          </button>
+        </div>
+      )}
+
+      {gameStatus === "STARTING" && (
+        <div style={{
+          position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
+          background: "rgba(0,0,0,0.8)", display: "flex", flexDirection: "column",
+          alignItems: "center", justifyContent: "center", zIndex: 50,
+          color: "white", fontFamily: "var(--font-mono)"
+        }}>
+          <h2 style={{ fontSize: "64px", letterSpacing: "15px" }}>INITIALIZING...</h2>
+        </div>
+      )}
+
+      {gameStatus === "COMPLETED" && (
         <div style={{
           position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
           background: "rgba(0,50,0,0.8)", display: "flex", flexDirection: "column",
@@ -65,6 +94,23 @@ export function ActiveGameView({ room }: { room: any }) {
           <h2 style={{ fontSize: "48px", letterSpacing: "10px", color: "#00ff00", textShadow: "0 0 20px #00ff00" }}>REALITY ALIGNED</h2>
           <p style={{ marginTop: 20, fontSize: "24px" }}>PUZZLE SOLVED</p>
           <p style={{ marginTop: 10, fontSize: "16px", color: "#aaa" }}>YOU ESCAPED</p>
+        </div>
+      )}
+
+      {gameStatus === "ENDING" && (
+        <div style={{
+          position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
+          background: "rgba(0,0,0,0.9)", display: "flex", flexDirection: "column",
+          alignItems: "center", justifyContent: "center", zIndex: 50,
+          color: "white", fontFamily: "var(--font-mono)", textAlign: "center"
+        }}>
+          <h2 style={{ fontSize: "32px", letterSpacing: "10px", color: "#aaa" }}>SIMULATION ENDED</h2>
+          <button 
+            onClick={() => room.send("rematch")}
+            style={{ marginTop: 40, padding: "15px 30px", fontSize: "20px", background: "white", color: "black", cursor: "pointer", border: "none" }}
+          >
+            PLAY AGAIN
+          </button>
         </div>
       )}
 
@@ -96,7 +142,7 @@ export function ActiveGameView({ room }: { room: any }) {
           <RemotePlayers room={room} />
 
           {/* Player Controls */}
-          {gameStatus !== "waiting" && <PlayerCamera room={room} />}
+          {(gameStatus === "PLAYING" || gameStatus === "COMPLETED") && <PlayerCamera room={room} />}
         </Physics>
       </Canvas>
     </div>

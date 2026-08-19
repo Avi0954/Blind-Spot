@@ -4,11 +4,23 @@ import { InteractableState } from "./InteractableState";
 import { PuzzleState } from "./PuzzleState";
 import { ClientReality } from "./ClientReality";
 
+export enum GameStatus {
+  WAITING = "WAITING",
+  LOBBY = "LOBBY",
+  STARTING = "STARTING",
+  PLAYING = "PLAYING",
+  PAUSED = "PAUSED",
+  COMPLETED = "COMPLETED",
+  FAILED = "FAILED",
+  ENDING = "ENDING"
+}
+
 export class GameState extends Schema {
   @type("string") roomId: string = "";
   @type("string") hostId: string = "";
-  @type("string") gameStatus: string = "waiting"; // waiting, playing, finished
-  @type("string") gameMode: string = "standard";
+  @type("string") gameStatus: string = GameStatus.WAITING;
+  @type("number") stateVersion: number = 0;
+  @type("string") gameMode: string = "Different Reality";
   @type({ map: Player }) players = new MapSchema<Player>();
   
   // These are now SERVER ONLY. They lack @type and will NOT be synced over the network.
