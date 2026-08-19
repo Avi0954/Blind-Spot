@@ -130,11 +130,16 @@ export class GameStateMachine {
         if (this.room.state.startedAt === 0) {
           this.room.state.startedAt = Date.now();
         }
+        
+        // Start Panic Mode if mode is Panic or Team Roles (or just always since it handles itself if puzzle is short)
+        // Let's start it always as part of the core loop for now
+        this.room.panicManager.startPanic(180000); // 3 minutes
         break;
 
       case GameStatus.COMPLETED:
         // Freeze gameplay
-        // Disable puzzle interactions (could be enforced by checking gameStatus in interaction validator)
+        // Disable puzzle interactions
+        this.room.panicManager.completePanic();
         
         // Wait a few seconds for victory presentation, then go to ENDING
         setTimeout(() => {
@@ -146,6 +151,7 @@ export class GameStateMachine {
 
       case GameStatus.FAILED:
         // Freeze gameplay
+        this.room.panicManager.failPanic();
         setTimeout(() => {
           if (this.getState() === GameStatus.FAILED) {
             this.transition(GameStatus.ENDING, "Failure sequence finished");

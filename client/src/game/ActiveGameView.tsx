@@ -11,6 +11,7 @@ import { InteractionPrompt } from "./interaction/InteractionPrompt";
 import { KeypadUI } from "./interaction/KeypadUI";
 import { ClueUI } from "./interaction/ClueUI";
 import { RoleIntroUI } from "./ui/RoleIntroUI";
+import { PanicTimerUI } from "./ui/PanicTimerUI";
 import { RoleType } from "@blind-spot/shared";
 import { useGameStore } from "../store/gameStore";
 
@@ -40,6 +41,8 @@ export function ActiveGameView({ room }: { room: any }) {
         <p>[MOUSE] Look</p>
         <p>[ESC] Unlock Cursor</p>
       </div>
+
+      <PanicTimerUI panic={room.state.panic} />
 
       <div style={{ 
         position: "absolute", top: "50%", left: "50%", 
@@ -122,7 +125,7 @@ export function ActiveGameView({ room }: { room: any }) {
       <Canvas shadows>
         <Physics>
           {/* Core Environment */}
-          <Room />
+          <Room room={room} />
           
           {/* Main Exit Door */}
           <Door position={[0, 0, -5]} rotation={[0, 0, 0]} interactableId="door_01" room={room} />

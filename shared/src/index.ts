@@ -5,3 +5,4 @@ export * from "./schemas/InteractableState";
 export * from "./schemas/PuzzleState";
 export * from "./schemas/ClientReality";
 export * from "./schemas/Roles";
+export * from "./schemas/PanicState";

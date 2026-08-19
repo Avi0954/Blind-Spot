@@ -7,12 +7,14 @@ import { PuzzleManager } from "../game/puzzle/PuzzleManager";
 import { PerceptionManager } from "../game/perception/PerceptionManager";
 import { GameStateMachine } from "../game/state/GameStateMachine";
 import { RoleManager } from "../game/roles/RoleManager";
+import { PanicManager } from "../game/panic/PanicManager";
 
 export class GameRoom extends Room<GameState> {
   maxClients = 6;
   puzzleManager!: PuzzleManager;
   perceptionManager!: PerceptionManager;
   stateMachine!: GameStateMachine;
+  panicManager!: PanicManager;
 
   onCreate(options: any) {
     this.setState(new GameState());
@@ -20,6 +22,12 @@ export class GameRoom extends Room<GameState> {
     this.puzzleManager = new PuzzleManager(this);
     this.perceptionManager = new PerceptionManager(this);
     this.stateMachine = new GameStateMachine(this);
+    this.panicManager = new PanicManager(this);
+    
+    // Set up server tick for panic mode
+    this.setSimulationInterval((deltaTime) => {
+      this.panicManager.update();
+    }, 100); // 10hz simulation tick
 
     this.perceptionManager.addRule({
       evaluate: (playerId: string, object: InteractableState, room: GameRoom) => {
@@ -172,6 +180,7 @@ export class GameRoom extends Room<GameState> {
     terminalA.position = new Vector3(-4.9, 1.5, -3); // Left wall
     terminalA.interactionRange = 2.0;
     terminalA.requiredAbility = "OPERATE_MACHINE";
+    terminalA.panicConfig = JSON.stringify({ disabledDuring: ["EMERGENCY"] });
     this.state.interactables.set(terminalA.id, terminalA);
 
     // Terminal B (Correct)
@@ -192,6 +201,7 @@ export class GameRoom extends Room<GameState> {
     terminalC.position = new Vector3(4.9, 1.5, -3); // Right wall
     terminalC.interactionRange = 2.0;
     terminalC.requiredAbility = "OPERATE_MACHINE";
+    terminalC.panicConfig = JSON.stringify({ disabledDuring: ["EMERGENCY"] });
     this.state.interactables.set(terminalC.id, terminalC);
 
     // Observer Clue (Hidden Symbol Panel)

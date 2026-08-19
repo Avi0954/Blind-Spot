@@ -11,4 +11,5 @@ export class InteractableState extends Schema {
   @type("string") metadata: string = "{}"; // JSON string for type-specific properties
   @type("string") requiredAbility: string = "";
   @type("string") requiredPerception: string = "";
+  @type("string") panicConfig: string = "{}"; // JSON string for { disabledDuring: PanicPhase[] }
 }

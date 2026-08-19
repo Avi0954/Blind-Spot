@@ -40,7 +40,21 @@ export class InteractionValidator {
     if (interactable.requiredAbility) {
       const roleDef = ROLE_DEFINITIONS[player.role as RoleType];
       if (!roleDef || !roleDef.abilities.includes(interactable.requiredAbility as any)) {
-        return InteractionResult.UNAUTHORIZED; // Will need to define this in context if missing, or use a general one. Let's add it or use INVALID_PLAYER/OBJECT_NOT_FOUND. Let's use string "UNAUTHORIZED". 
+        return InteractionResult.UNAUTHORIZED; 
+      }
+    }
+
+    // 5.6 PANIC CONFIG CHECK
+    if (interactable.panicConfig && interactable.panicConfig !== "{}" && interactable.panicConfig !== "") {
+      try {
+        const config = JSON.parse(interactable.panicConfig);
+        if (config.disabledDuring && Array.isArray(config.disabledDuring)) {
+          if (config.disabledDuring.includes(state.panic.phase)) {
+            return InteractionResult.BUSY; // Or UNAUTHORIZED, but BUSY fits "temporarily offline" well
+          }
+        }
+      } catch (e) {
+        console.warn(`[InteractionValidator] Invalid panicConfig JSON on object ${interactable.id}`);
       }
     }
 

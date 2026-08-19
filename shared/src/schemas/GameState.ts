@@ -3,6 +3,7 @@ import { Player } from "./Player";
 import { InteractableState } from "./InteractableState";
 import { PuzzleState } from "./PuzzleState";
 import { ClientReality } from "./ClientReality";
+import { PanicState } from "./PanicState";
 
 export enum GameStatus {
   WAITING = "WAITING",
@@ -35,4 +36,6 @@ export class GameState extends Schema {
 
   @type("number") createdAt: number = Date.now();
   @type("number") startedAt: number = 0;
+
+  @type(PanicState) panic: PanicState = new PanicState();
 }
