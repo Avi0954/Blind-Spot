@@ -8,6 +8,12 @@ import { PerceptionManager } from "../game/perception/PerceptionManager";
 import { GameStateMachine } from "../game/state/GameStateMachine";
 import { RoleManager } from "../game/roles/RoleManager";
 import { PanicManager } from "../game/panic/PanicManager";
+import { RuleEngine } from "../game/rules/RuleEngine";
+import { GameModeRegistry } from "../game/modes/GameModeRegistry";
+import { DifferentRealityMode } from "../game/modes/impl/DifferentRealityMode";
+import { TeamRolesMode } from "../game/modes/impl/TeamRolesMode";
+import { PanicMode } from "../game/modes/impl/PanicMode";
+import { GameModeId, ModeContext } from "../game/rules/RuleTypes";
 
 export class GameRoom extends Room<GameState> {
   maxClients = 6;
@@ -15,6 +21,8 @@ export class GameRoom extends Room<GameState> {
   perceptionManager!: PerceptionManager;
   stateMachine!: GameStateMachine;
   panicManager!: PanicManager;
+  ruleEngine!: RuleEngine;
+  modeRegistry!: GameModeRegistry;
 
   onCreate(options: any) {
     this.setState(new GameState());
@@ -25,35 +33,46 @@ export class GameRoom extends Room<GameState> {
     this.panicManager = new PanicManager(this);
     
     // Set up server tick for panic mode
-    this.setSimulationInterval((deltaTime) => {
+    this.setSimulationInterval((_deltaTime) => {
       this.panicManager.update();
     }, 100); // 10hz simulation tick
 
-    this.perceptionManager.addRule({
-      evaluate: (playerId: string, object: InteractableState, room: GameRoom) => {
-        // Find player roles
-        const players = Array.from(room.state.players.keys());
-        const isPlayerA = players[0] === playerId;
-        
-        // Door and keypad are visible to everyone
-        if (object.id === "door_01" || object.id === "keypad_01") return true;
+    // Set up Rule Engine and Modes
+    this.ruleEngine = new RuleEngine();
+    this.modeRegistry = new GameModeRegistry();
+    
+    this.modeRegistry.register(new DifferentRealityMode());
+    this.modeRegistry.register(new TeamRolesMode());
+    this.modeRegistry.register(new PanicMode());
 
-        // Player A sees symbol clue
-        if (isPlayerA && object.id === "symbol_clue_01") return true;
+    // Determine active modes (from options or default to all)
+    const activeModeIds: GameModeId[] = options.modes || ["DIFFERENT_REALITY", "TEAM_ROLES", "PANIC"];
+    
+    this.state.activeModes.clear();
+    activeModeIds.forEach(id => this.state.activeModes.push(id));
+    this.state.gameMode = activeModeIds.join(" + ");
 
-        // Player B sees number clue
-        if (!isPlayerA && object.id === "number_clue_01") return true;
+    const activeModes = this.modeRegistry.resolve(activeModeIds);
+    const modeContext: ModeContext = {
+      room: this,
+      gameState: this.state
+    };
 
-        // In single player testing, allow seeing both
-        if (players.length <= 1) return true;
-
-        return false;
-      }
-    });
+    // Initialize modes and register rules
+    for (const mode of activeModes) {
+      if (mode.initialize) mode.initialize(modeContext);
+      
+      const rules = mode.registerRules(modeContext);
+      if (rules.perception) this.ruleEngine.registerAll(rules.perception);
+      if (rules.roles) this.ruleEngine.registerAll(rules.roles);
+      if (rules.interactions) this.ruleEngine.registerAll(rules.interactions);
+      if (rules.timers) this.ruleEngine.registerAll(rules.timers);
+      if (rules.puzzles) this.ruleEngine.registerAll(rules.puzzles);
+      if (rules.environment) this.ruleEngine.registerAll(rules.environment);
+    }
 
     this.state.roomId = this.roomId;
     this.state.createdAt = Date.now();
-    this.state.gameMode = options.gameMode || "Different Reality";
 
     this.onMessage("ready", (client, message) => {
       const player = this.state.players.get(client.sessionId);

@@ -1,49 +1,11 @@
 import { GameRoom } from "../../rooms/GameRoom";
-import { ClientReality, InteractableState, ROLE_DEFINITIONS, RoleType } from "@blind-spot/shared";
-
-// A simple rule interface. A rule evaluates whether a player can perceive a specific object.
-export interface PerceptionRule {
-  evaluate(playerId: string, object: InteractableState, room: GameRoom): boolean;
-}
+import { ClientReality } from "@blind-spot/shared";
 
 export class PerceptionManager {
   private room: GameRoom;
-  private rules: PerceptionRule[] = [];
 
   constructor(room: GameRoom) {
     this.room = room;
-
-    // Default Rule: If requiredPerception is set, player must have that ability
-    this.addRule({
-      evaluate: (playerId: string, object: InteractableState, room: GameRoom) => {
-        if (object.requiredPerception) {
-          const player = room.state.players.get(playerId);
-          if (!player) return false;
-          
-          const roleDef = ROLE_DEFINITIONS[player.role as RoleType];
-          if (!roleDef) return false;
-
-          // Check if role has the required ability
-          // The requiredPerception field contains the Ability enum string
-          return roleDef.abilities.includes(object.requiredPerception as any);
-        }
-        
-        // If there's no requiredPerception, we don't automatically grant it here.
-        // We let other rules (like default visible) handle it, or return true if we want it to be visible by default.
-        return false;
-      }
-    });
-
-    // Fallback Rule: Objects without requiredPerception are visible to everyone
-    this.addRule({
-      evaluate: (_playerId: string, object: InteractableState, _room: GameRoom) => {
-        return !object.requiredPerception;
-      }
-    });
-  }
-
-  public addRule(rule: PerceptionRule) {
-    this.rules.push(rule);
   }
 
   // Called when a player joins to set up their ClientReality container
@@ -81,17 +43,17 @@ export class PerceptionManager {
     const newVisibleIds = new Set<string>();
     
     for (const [objectId, interactable] of this.room.state.interactables.entries()) {
-      // If there are no rules, default to visible. Otherwise, check if ANY rule permits it.
-      let canSee = this.rules.length === 0 ? true : false;
-      
-      for (const rule of this.rules) {
-        if (rule.evaluate(playerId, interactable, this.room)) {
-          canSee = true;
-          break; // One passing rule is enough (additive permissions)
-        }
-      }
+      // Evaluate perception using RuleEngine
+      const ruleResult = this.room.ruleEngine.evaluate("PERCEPTION", {
+        player: this.room.state.players.get(playerId),
+        object: interactable,
+        room: this.room,
+        gameState: this.room.state
+      });
 
-      if (canSee) {
+      // ALLOW means visible. If it's explicitly DENY or PASS (and we decide PASS means hidden by default),
+      // we'll treat ALLOW as the only way an object is visible.
+      if (ruleResult.outcome === "ALLOW") {
         newVisibleIds.add(objectId);
       }
     }

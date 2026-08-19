@@ -1,5 +1,5 @@
 import { InteractionContext, InteractionResult } from "./InteractionContext";
-import { GameStatus, ROLE_DEFINITIONS, RoleType } from "@blind-spot/shared";
+import { GameStatus } from "@blind-spot/shared";
 
 export class InteractionValidator {
   static validate(context: InteractionContext): InteractionResult {
@@ -36,26 +36,17 @@ export class InteractionValidator {
       return InteractionResult.OUT_OF_RANGE;
     }
 
-    // 5.5 ABILITY CHECK
-    if (interactable.requiredAbility) {
-      const roleDef = ROLE_DEFINITIONS[player.role as RoleType];
-      if (!roleDef || !roleDef.abilities.includes(interactable.requiredAbility as any)) {
-        return InteractionResult.UNAUTHORIZED; 
-      }
-    }
+    // 5.5 Delegate remaining checks to RuleEngine
+    const ruleResult = context.room.ruleEngine.evaluate("INTERACTION", {
+      player,
+      object: interactable,
+      room: context.room,
+      gameState: state
+    });
 
-    // 5.6 PANIC CONFIG CHECK
-    if (interactable.panicConfig && interactable.panicConfig !== "{}" && interactable.panicConfig !== "") {
-      try {
-        const config = JSON.parse(interactable.panicConfig);
-        if (config.disabledDuring && Array.isArray(config.disabledDuring)) {
-          if (config.disabledDuring.includes(state.panic.phase)) {
-            return InteractionResult.BUSY; // Or UNAUTHORIZED, but BUSY fits "temporarily offline" well
-          }
-        }
-      } catch (e) {
-        console.warn(`[InteractionValidator] Invalid panicConfig JSON on object ${interactable.id}`);
-      }
+    if (ruleResult.outcome === "DENY") {
+      // Use the provided reason, or default to UNAUTHORIZED
+      return ruleResult.reason as InteractionResult || InteractionResult.UNAUTHORIZED;
     }
 
     // 6. Game state check

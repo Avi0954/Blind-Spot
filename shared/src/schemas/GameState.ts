@@ -1,4 +1,4 @@
-import { Schema, type, MapSchema, filter } from "@colyseus/schema";
+import { Schema, type, MapSchema, ArraySchema, filter } from "@colyseus/schema";
 import { Player } from "./Player";
 import { InteractableState } from "./InteractableState";
 import { PuzzleState } from "./PuzzleState";
@@ -20,6 +20,10 @@ export class GameState extends Schema {
   @type("string") roomId: string = "";
   @type("string") hostId: string = "";
   @type("string") gameStatus: string = GameStatus.WAITING;
+  
+  // The list of active game modes
+  @type(["string"]) activeModes = new ArraySchema<string>();
+
   @type("number") stateVersion: number = 0;
   @type("string") gameMode: string = "Different Reality";
   @type({ map: Player }) players = new MapSchema<Player>();

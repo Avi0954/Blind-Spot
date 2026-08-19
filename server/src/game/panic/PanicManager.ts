@@ -57,7 +57,7 @@ export class PanicManager {
     console.log(`[PanicManager] Panic Failed. Time expired!`);
     
     // Atomically transition the puzzle manager as well
-    for (const [id, puzzleState] of this.room.state.puzzles.entries()) {
+    for (const [_, puzzleState] of this.room.state.puzzles.entries()) {
       if (!puzzleState.completed) {
         puzzleState.state = "failed";
       }
