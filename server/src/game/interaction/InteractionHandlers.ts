@@ -22,6 +22,12 @@ export class InteractionHandlers {
       default:
         console.warn(`No handler for interactable type: ${interactable.type}`);
     }
+    
+    // Notify puzzle manager that an interaction successfully occurred
+    context.room.puzzleManager.handleEvent({
+      type: "interaction.completed",
+      objectId: interactable.id
+    });
   }
 
   private static handleDoor(context: InteractionContext) {

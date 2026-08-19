@@ -10,6 +10,7 @@ import { PlayerCamera } from "./camera/PlayerCamera";
 import { Physics } from "@react-three/rapier";
 import { RemotePlayers } from "./multiplayer/RemotePlayers";
 import { InteractionPrompt } from "./interaction/InteractionPrompt";
+import { PuzzleUI } from "./puzzle/PuzzleUI";
 
 export function ActiveGameView({ room }: { room: any }) {
   // We can listen to state changes if needed for puzzle logic later
@@ -35,6 +36,7 @@ export function ActiveGameView({ room }: { room: any }) {
       }} />
 
       <InteractionPrompt room={room} />
+      <PuzzleUI room={room} />
 
       <Canvas shadows>
         <Physics>

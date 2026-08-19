@@ -3,13 +3,17 @@ import { GameState, Player, InteractableState, Vector3 } from "@blind-spot/share
 import { InteractionValidator } from "../game/interaction/InteractionValidator";
 import { InteractionHandlers } from "../game/interaction/InteractionHandlers";
 import { InteractionResult } from "../game/interaction/InteractionContext";
+import { PuzzleManager } from "../game/puzzle/PuzzleManager";
 
 export class GameRoom extends Room<GameState> {
   maxClients = 6;
+  puzzleManager!: PuzzleManager;
 
   onCreate(options: any) {
     this.setState(new GameState());
     
+    this.puzzleManager = new PuzzleManager(this);
+
     this.state.roomId = this.roomId;
     this.state.createdAt = Date.now();
     this.state.gameMode = options.gameMode || "Different Reality";
@@ -132,6 +136,21 @@ export class GameRoom extends Room<GameState> {
     lever.position = new Vector3(-4.9, 1.5, 2); // Control panel area
     lever.interactionRange = 2.0;
     this.state.interactables.set(lever.id, lever);
+
+    // Test Sequence Puzzle Configuration
+    this.puzzleManager.loadPuzzles([
+      {
+        id: "lab_sequence_01",
+        type: "sequence",
+        configuration: {
+          targets: ["lever_01", "door_01"],
+          resetOnMistake: true
+        },
+        solution: {
+          sequence: ["lever_01", "door_01"]
+        }
+      }
+    ]);
   }
 
   onJoin(client: Client, options: any) {
