@@ -18,17 +18,17 @@ export class GameStateMachine {
 
     switch (currentState) {
       case GameStatus.WAITING:
-        return targetState === GameStatus.LOBBY && players.length >= 2;
+        return targetState === GameStatus.LOBBY && players.length >= 1;
         
       case GameStatus.LOBBY:
         // Transition to STARTING if all players are ready and we have required count
         if (targetState === GameStatus.STARTING) {
-          return players.length >= 2 && players.every(p => p.ready);
+          return players.length >= 1 && players.every(p => p.ready);
         }
         // If a player leaves and drops below minimum, we could theoretically go back to WAITING, 
         // but for MVP, let's keep it simple.
         if (targetState === GameStatus.WAITING) {
-           return players.length < 2;
+           return players.length < 1;
         }
         return false;
 
@@ -40,7 +40,7 @@ export class GameStateMachine {
         if (targetState === GameStatus.PAUSED) return true; // Server pause request
         if (targetState === GameStatus.COMPLETED) return true; // Victory condition
         if (targetState === GameStatus.FAILED) return true; // Failure condition
-        if (targetState === GameStatus.WAITING) return players.length < 2; // Abort if someone leaves
+        if (targetState === GameStatus.WAITING) return players.length < 1; // Abort if someone leaves
         return false;
 
       case GameStatus.PAUSED:

@@ -13,7 +13,9 @@ export class RoleManager {
 
     let rolesToAssign: RoleType[] = [];
 
-    if (players.length === 2) {
+    if (players.length === 1) {
+      rolesToAssign = [RoleType.ENGINEER]; // Give them the most active role
+    } else if (players.length === 2) {
       rolesToAssign = [RoleType.OBSERVER, RoleType.ENGINEER];
     } else if (players.length === 3) {
       rolesToAssign = [RoleType.OBSERVER, RoleType.DECODER, RoleType.ENGINEER];

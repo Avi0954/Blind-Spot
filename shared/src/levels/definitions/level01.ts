@@ -86,10 +86,25 @@ export const observationRoom: LevelDefinition = {
       type: "multiplayer",
       configuration: {
         playersRequired: 2,
-        targetObject: "terminal_b"
+        targetObject: "terminal_b" // This will be overwritten by the generator
+      },
+      variation: {
+        symbols: {
+          enabled: true,
+          count: 4,
+          pool: ["▲", "○", "□", "★", "◇", "●", "■", "△"]
+        },
+        numbers: {
+          enabled: true,
+          min: 1,
+          max: 9
+        },
+        clues: {
+          enabled: true
+        }
       },
       solution: {
-        sequence: [8, 3, 6, 3]
+        sequence: [8, 3, 6, 3] // Default fallback solution
       }
     }
   ],

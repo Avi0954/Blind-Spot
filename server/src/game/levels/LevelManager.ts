@@ -1,4 +1,5 @@
 import { LevelLoader, LevelRegistry, LevelDefinition } from "@blind-spot/shared";
+import { GameGenerator } from "../generation/GameGenerator";
 import { GameRoom } from "../../rooms/GameRoom";
 import { InteractableState, Vector3 } from "@blind-spot/shared";
 
@@ -15,19 +16,23 @@ export class LevelManager {
   }
 
   public async load(levelId: string): Promise<void> {
-    const definition = this.loader.load(levelId);
+    const rawDefinition = this.loader.load(levelId);
+    
+    const modeIds = rawDefinition.modes || [];
+    
+    // Generate the level variation using the room's seed
+    const definition = GameGenerator.generate(this.room.state.seed, rawDefinition, modeIds);
     this.currentLevel = definition;
     
     // Set network state
     this.room.state.activeLevelId = definition.id;
-    this.room.state.gameMode = definition.modes ? definition.modes.join(" + ") : "";
+    this.room.state.gameMode = modeIds.join(" + ");
     
     // Clear old state
     this.room.state.interactables.clear();
     this.room.state.puzzles.clear();
     
     // Re-initialize modes based on level config
-    const modeIds = definition.modes || [];
     this.room.state.activeModes.clear();
     modeIds.forEach(id => this.room.state.activeModes.push(id));
     this.room.initializeModes(modeIds);

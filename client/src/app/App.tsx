@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { joinLobbyRoom, createGameRoom, joinGameRoom } from "../multiplayer/colyseus";
 import { useGameStore } from "../store/gameStore";
-import { Player } from "@blind-spot/shared";
+import { Player, GameStatus } from "@blind-spot/shared";
 import * as THREE from "three";
 import { ActiveGameView } from "../game/ActiveGameView";
 
@@ -145,7 +145,7 @@ export function App() {
   };
 
   if (status === "in_game" && gameRoom) {
-    if (gameRoom.state.gameStatus === "playing") {
+    if (gameRoom.state.gameStatus === GameStatus.PLAYING || gameRoom.state.gameStatus === GameStatus.STARTING) {
       return <ActiveGameView room={gameRoom} />;
     }
     return <GameLobbyView room={gameRoom} onLeave={handleLeave} />;
@@ -285,7 +285,7 @@ function GameLobbyView({ room, onLeave }: { room: any, onLeave: () => void }) {
   const myReady = myPlayer ? myPlayer.ready : false;
 
   const allReady = players.length > 0 && players.every(p => p.ready);
-  const canStart = players.length >= 2 && players.length <= room.maxClients && allReady;
+  const canStart = players.length >= 1 && players.length <= room.maxClients && allReady;
 
   const handleModeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     room.send("change_mode", { gameMode: e.target.value });

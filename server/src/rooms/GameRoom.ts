@@ -1,4 +1,5 @@
 import { Room, Client } from "@colyseus/core";
+import crypto from "node:crypto";
 import { GameState, GameStatus, Player, Vector3 } from "@blind-spot/shared";
 import { InteractionValidator } from "../game/interaction/InteractionValidator";
 import { InteractionHandlers } from "../game/interaction/InteractionHandlers";
@@ -53,6 +54,9 @@ export class GameRoom extends Room<GameState> {
     // Initial state
     this.state.roomId = this.roomId;
     this.state.createdAt = Date.now();
+    this.state.seed = crypto.randomBytes(16).toString("hex");
+    this.state.seedVersion = 1;
+    this.state.seedAlgorithm = "mulberry32";
     
     // Load default level
     this.levelManager.load("level-01");

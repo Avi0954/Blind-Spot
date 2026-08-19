@@ -70,10 +70,33 @@ export interface InteractableDefinition {
   enabled?: boolean;
 }
 
+export interface SymbolVariationConfig {
+  enabled: boolean;
+  count?: number;
+  pool?: string[];
+}
+
+export interface NumberVariationConfig {
+  enabled: boolean;
+  min?: number;
+  max?: number;
+}
+
+export interface ClueVariationConfig {
+  enabled: boolean;
+}
+
+export interface PuzzleVariationConfig {
+  symbols?: SymbolVariationConfig;
+  numbers?: NumberVariationConfig;
+  clues?: ClueVariationConfig;
+}
+
 export interface PuzzleDefinition {
   id: string;
   type: "SEQUENCE" | "NUMBER" | "SYMBOL" | "POSITION" | "MULTIPLAYER" | string;
   configuration: Record<string, unknown>;
+  variation?: PuzzleVariationConfig;
   solution?: unknown;
   requiredInteractions?: string[];
   requiredRoles?: string[];

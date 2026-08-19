@@ -23,6 +23,10 @@ export class GameState extends Schema {
   
   @type("string") activeLevelId: string = "level-01"; // Default to level-01
   
+  @type("string") seed: string = "";
+  @type("number") seedVersion: number = 1;
+  @type("string") seedAlgorithm: string = "mulberry32";
+  
   // The list of active game modes
   @type(["string"]) activeModes = new ArraySchema<string>();
 
