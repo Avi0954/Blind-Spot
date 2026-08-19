@@ -6,6 +6,7 @@ export * from "./schemas/PuzzleState";
 export * from "./schemas/ClientReality";
 export * from "./schemas/Roles";
 export * from "./schemas/PanicState";
+export * from "./schemas/Communication";
 export * from "./levels/LevelDefinition";
 export * from "./levels/LevelLoader";
 export * from "./levels/definitions/level01";

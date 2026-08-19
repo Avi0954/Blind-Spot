@@ -16,6 +16,7 @@ import { TeamRolesMode } from "../game/modes/impl/TeamRolesMode";
 import { PanicMode } from "../game/modes/impl/PanicMode";
 import { GameModeId, ModeContext } from "../game/rules/RuleTypes";
 import { LevelManager } from "../game/levels/LevelManager";
+import { CommunicationManager } from "../game/communication/CommunicationManager";
 
 export class GameRoom extends Room<GameState> {
   maxClients = 6;
@@ -26,6 +27,7 @@ export class GameRoom extends Room<GameState> {
   ruleEngine!: RuleEngine;
   modeRegistry!: GameModeRegistry;
   levelManager!: LevelManager;
+  communicationManager!: CommunicationManager;
 
   onCreate(_options: any) {
     this.setState(new GameState());
@@ -34,10 +36,12 @@ export class GameRoom extends Room<GameState> {
     this.perceptionManager = new PerceptionManager(this);
     this.stateMachine = new GameStateMachine(this);
     this.panicManager = new PanicManager(this);
+    this.communicationManager = new CommunicationManager(this);
     
     // Set up server tick for panic mode
     this.setSimulationInterval((_deltaTime) => {
       this.panicManager.update();
+      this.communicationManager.update();
     }, 100); // 10hz simulation tick
 
     // Set up Rule Engine and Modes
@@ -222,6 +226,7 @@ export class GameRoom extends Room<GameState> {
       
       this.state.players.delete(client.sessionId);
       this.perceptionManager.removePlayer(client.sessionId);
+      this.communicationManager.removePlayer(client.sessionId);
       this.perceptionManager.recalculateAll();
       
       // If room is empty, close it

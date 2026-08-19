@@ -9,6 +9,10 @@ import { KeypadUI } from "./interaction/KeypadUI";
 import { ClueUI } from "./interaction/ClueUI";
 import { RoleIntroUI } from "./ui/RoleIntroUI";
 import { PanicTimerUI } from "./ui/PanicTimerUI";
+import { CommunicationUI } from "./communication/CommunicationUI";
+import { PingManager } from "./communication/PingManager";
+import { QuickMessageUI } from "./communication/QuickMessageUI";
+import { WorldPingRenderer } from "./communication/WorldPingRenderer";
 import { RoleType } from "@blind-spot/shared";
 import { useGameStore } from "../store/gameStore";
 
@@ -117,6 +121,9 @@ export function ActiveGameView({ room }: { room: any }) {
       <InteractionPrompt room={room} />
       <KeypadUI room={room} />
       <ClueUI room={room} />
+      <CommunicationUI room={room} />
+      <PingManager room={room} />
+      <QuickMessageUI room={room} />
 
       {/* The 3D World */}
       <Canvas shadows>
@@ -129,6 +136,8 @@ export function ActiveGameView({ room }: { room: any }) {
 
           {/* Player Controls */}
           {(gameStatus === "PLAYING" || gameStatus === "COMPLETED") && <PlayerCamera room={room} />}
+          
+          <WorldPingRenderer room={room} />
         </Physics>
       </Canvas>
     </div>
