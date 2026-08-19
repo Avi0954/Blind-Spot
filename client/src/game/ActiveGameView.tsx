@@ -1,9 +1,6 @@
 import { useEffect, useState } from "react";
 import { Canvas } from "@react-three/fiber";
-import { Room } from "./world/Room";
-import { Door } from "./world/Door";
-import { Table } from "./world/Table";
-import { InteractableObject } from "./world/InteractableObject";
+import { LevelRenderer } from "./world/LevelRenderer";
 import { PlayerCamera } from "./camera/PlayerCamera";
 import { Physics } from "@react-three/rapier";
 import { RemotePlayers } from "./multiplayer/RemotePlayers";
@@ -124,21 +121,8 @@ export function ActiveGameView({ room }: { room: any }) {
       {/* The 3D World */}
       <Canvas shadows>
         <Physics>
-          {/* Core Environment */}
-          <Room room={room} />
-          
-          {/* Main Exit Door */}
-          <Door position={[0, 0, -5]} rotation={[0, 0, 0]} interactableId="door_01" room={room} />
-          
-          <Table position={[2, 0, 0]} rotation={[0, 0, 0]} />
-          
-          {/* MVP Puzzle Elements */}
-          {/* Keypad */}
-          <InteractableObject position={[-1, 1.5, -4.9]} color="#00ffcc" interactableId="keypad_01" room={room} /> 
-          {/* Symbol Clue */}
-          <InteractableObject position={[-4.9, 1.5, 0]} color="#cc00ff" interactableId="symbol_clue_01" room={room} />
-          {/* Number Clue */}
-          <InteractableObject position={[4.9, 1.5, 0]} color="#00ff00" interactableId="number_clue_01" room={room} />
+          {/* Level Content (Environment, Objects, Interactables) */}
+          <LevelRenderer room={room} />
 
           {/* Multiplayer Avatars */}
           <RemotePlayers room={room} />

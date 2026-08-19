@@ -21,6 +21,8 @@ export class GameState extends Schema {
   @type("string") hostId: string = "";
   @type("string") gameStatus: string = GameStatus.WAITING;
   
+  @type("string") activeLevelId: string = "level-01"; // Default to level-01
+  
   // The list of active game modes
   @type(["string"]) activeModes = new ArraySchema<string>();
 
