@@ -61,6 +61,7 @@ export function App() {
   const [roomCode, setRoomCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [localGameStatus, setLocalGameStatus] = useState<string>(GameStatus.WAITING);
 
   useEffect(() => {
     localStorage.setItem("blindspot_name", playerName);
@@ -140,12 +141,17 @@ export function App() {
     room.onMessage("PANIC_FAILURE", (data: any) => console.log("Panic failure:", data));
     room.onMessage("PANIC_PHASE_CHANGED", (data: any) => console.log("Panic phase changed:", data));
 
+    setLocalGameStatus(room.state.gameStatus);
+    room.state.listen("gameStatus", (status: string) => {
+      setLocalGameStatus(status);
+    });
+
     setGameRoom(room);
     setStatus("in_game");
   };
 
   if (status === "in_game" && gameRoom) {
-    if (gameRoom.state.gameStatus === GameStatus.PLAYING || gameRoom.state.gameStatus === GameStatus.STARTING) {
+    if (localGameStatus === GameStatus.PLAYING || localGameStatus === GameStatus.STARTING) {
       return <ActiveGameView room={gameRoom} />;
     }
     return <GameLobbyView room={gameRoom} onLeave={handleLeave} />;
@@ -267,9 +273,13 @@ function GameLobbyView({ room, onLeave }: { room: any, onLeave: () => void }) {
 
   useEffect(() => {
     const stateChangeListener = room.onStateChange(() => setTick(t => t + 1));
-    room.state.players.onAdd = () => setTick(t => t + 1);
+    
+    room.state.players.onAdd = (player: any) => {
+      player.onChange = () => setTick(t => t + 1);
+      setTick(t => t + 1);
+    };
+    
     room.state.players.onRemove = () => setTick(t => t + 1);
-    room.state.players.onChange = () => setTick(t => t + 1);
 
     room.onMessage("error", (msg: { message: string }) => {
       setErrorMsg(msg.message);

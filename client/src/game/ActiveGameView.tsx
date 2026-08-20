@@ -122,11 +122,11 @@ export function ActiveGameView({ room }: { room: any }) {
       <KeypadUI room={room} />
       <ClueUI room={room} />
       <CommunicationUI room={room} />
-      <PingManager room={room} />
       <QuickMessageUI room={room} />
 
       {/* The 3D World */}
       <Canvas shadows>
+        <PingManager room={room} />
         <Physics>
           {/* Level Content (Environment, Objects, Interactables) */}
           <LevelRenderer room={room} />
